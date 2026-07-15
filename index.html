@@ -1,0 +1,1308 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>舟山综合保税区 · 区内企业数据查询系统</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+/* ========== 基础重置 ========== */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy-900: #0f2740;
+  --navy-800: #163354;
+  --navy-700: #1e4068;
+  --navy-600: #2a5078;
+  --blue-500: #3b6fa0;
+  --blue-400: #5587b8;
+  --blue-300: #7aa5cc;
+  --blue-100: #d6e4f0;
+  --blue-50:  #ebf3fa;
+  --slate-50: #f5f7fa;
+  --slate-100: #eef2f6;
+  --slate-200: #dde4ec;
+  --slate-300: #c4d0dd;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --white: #ffffff;
+  --teal: #0d8b7a;
+  --teal-light: #d1f2eb;
+  --amber: #b87b00;
+  --amber-light: #fef3cd;
+  --red: #c0392b;
+  --shadow-sm: 0 1px 3px rgba(15,39,64,0.08);
+  --shadow-md: 0 4px 12px rgba(15,39,64,0.10);
+  --shadow-lg: 0 8px 24px rgba(15,39,64,0.12);
+}
+
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Helvetica Neue", Arial, sans-serif;
+  background: var(--slate-50);
+  color: var(--slate-800);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* ========== 顶部标题栏 ========== */
+.top-bar {
+  background: linear-gradient(135deg, var(--navy-900) 0%, var(--navy-700) 100%);
+  color: var(--white);
+  padding: 0 32px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  z-index: 100;
+}
+.top-bar .logo-area { display: flex; align-items: center; gap: 12px; }
+.top-bar .logo-icon {
+  width: 36px; height: 36px;
+  background: var(--blue-400);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.top-bar .title-text { font-size: 18px; font-weight: 600; letter-spacing: 1px; }
+.top-bar .subtitle { font-size: 12px; color: var(--blue-300); margin-top: 2px; }
+.top-bar .top-right { display: flex; align-items: center; gap: 20px; font-size: 12px; color: var(--blue-300); }
+.top-bar .top-right .item { display: flex; align-items: center; gap: 6px; }
+.top-bar .dot { width: 6px; height: 6px; background: #4ade80; border-radius: 50%; }
+.btn-version-mgmt {
+  background: var(--navy-600);
+  border: 1px solid var(--blue-400);
+  color: var(--blue-100);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all .15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-version-mgmt:hover { background: var(--navy-500); border-color: var(--blue-300); }
+
+/* ========== 筛选栏 ========== */
+.filter-section {
+  background: var(--white);
+  margin: 16px 16px 0;
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--slate-200);
+  overflow: hidden;
+}
+.filter-row {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 16px; padding: 14px 20px;
+}
+.filter-row + .filter-row { border-top: 1px solid var(--slate-100); padding-top: 12px; }
+.filter-group { display: flex; align-items: center; gap: 8px; }
+.filter-label { font-size: 13px; color: var(--slate-500); font-weight: 500; white-space: nowrap; }
+
+.select-wrap { position: relative; }
+.custom-select {
+  appearance: none; -webkit-appearance: none;
+  background: var(--slate-50); border: 1px solid var(--slate-300);
+  border-radius: 6px; padding: 7px 32px 7px 12px;
+  font-size: 13px; color: var(--slate-700); cursor: pointer;
+  font-family: inherit; transition: border-color .15s, box-shadow .15s; outline: none;
+}
+.custom-select:hover { border-color: var(--blue-400); }
+.custom-select:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(59,111,160,0.12); }
+.select-wrap::after {
+  content: ''; position: absolute; right: 12px; top: 50%;
+  transform: translateY(-60%) rotate(45deg);
+  width: 6px; height: 6px;
+  border-right: 1.5px solid var(--slate-400); border-bottom: 1.5px solid var(--slate-400);
+  pointer-events: none;
+}
+
+.mode-toggle { display: inline-flex; background: var(--slate-100); border-radius: 6px; padding: 2px; }
+.mode-toggle button {
+  border: none; background: transparent; padding: 5px 14px;
+  font-size: 12px; color: var(--slate-500); cursor: pointer;
+  border-radius: 5px; font-family: inherit; transition: all .15s;
+}
+.mode-toggle button.active { background: var(--white); color: var(--navy-700); font-weight: 600; box-shadow: var(--shadow-sm); }
+.range-sep { color: var(--slate-400); font-size: 13px; }
+
+.search-input {
+  background: var(--slate-50); border: 1px solid var(--slate-300);
+  border-radius: 6px; padding: 7px 12px 7px 32px;
+  font-size: 13px; width: 220px; font-family: inherit; outline: none;
+  transition: border-color .15s, box-shadow .15s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: 10px center;
+}
+.search-input:focus { border-color: var(--blue-500); box-shadow: 0 0 0 3px rgba(59,111,160,0.12); }
+
+.btn {
+  border: 1px solid var(--slate-300); background: var(--white); color: var(--slate-600);
+  padding: 7px 16px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  font-family: inherit; transition: all .15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn:hover { border-color: var(--blue-400); color: var(--navy-700); }
+.btn-primary { background: var(--navy-700); border-color: var(--navy-700); color: var(--white); }
+.btn-primary:hover { background: var(--navy-600); border-color: var(--navy-600); }
+.btn-danger { color: var(--red); border-color: var(--slate-300); }
+.btn-danger:hover { border-color: var(--red); color: var(--red); background: #fdf2f2; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.type-chip {
+  padding: 4px 12px; border-radius: 20px; font-size: 12px; cursor: pointer;
+  border: 1px solid var(--slate-300); background: var(--white); color: var(--slate-500);
+  transition: all .15s; font-family: inherit;
+}
+.type-chip.active { background: var(--navy-700); border-color: var(--navy-700); color: var(--white); font-weight: 500; }
+.type-chip:hover:not(.active) { border-color: var(--blue-400); color: var(--navy-700); }
+
+.metric-toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.metric-toggle {
+  padding: 3px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;
+  border: 1px solid var(--slate-200); background: var(--slate-50); color: var(--slate-500);
+  transition: all .15s; font-family: inherit; user-select: none;
+}
+.metric-toggle.active { background: var(--blue-50); border-color: var(--blue-400); color: var(--navy-700); font-weight: 500; }
+.metric-toggle:hover { border-color: var(--blue-300); }
+
+/* ========== 统计卡片 ========== */
+.stats-bar { display: flex; gap: 16px; padding: 16px; flex-wrap: wrap; }
+.stat-card {
+  flex: 1; min-width: 180px; background: var(--white); border-radius: 8px;
+  border: 1px solid var(--slate-200); padding: 14px 18px; box-shadow: var(--shadow-sm);
+  position: relative; overflow: hidden;
+}
+.stat-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--blue-500); }
+.stat-card .stat-label { font-size: 12px; color: var(--slate-500); margin-bottom: 6px; }
+.stat-card .stat-value { font-size: 22px; font-weight: 700; color: var(--navy-800); font-variant-numeric: tabular-nums; }
+.stat-card .stat-unit { font-size: 12px; color: var(--slate-400); font-weight: 400; margin-left: 4px; }
+
+/* ========== 表格区域 ========== */
+.table-section {
+  margin: 0 16px 16px; background: var(--white); border-radius: 8px;
+  box-shadow: var(--shadow-sm); border: 1px solid var(--slate-200); overflow: hidden;
+}
+.table-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px; border-bottom: 1px solid var(--slate-200); background: var(--slate-50);
+}
+.table-header .th-title { font-size: 14px; font-weight: 600; color: var(--navy-800); }
+.table-header .th-info { font-size: 12px; color: var(--slate-500); }
+.table-header .th-info .count { color: var(--navy-700); font-weight: 600; }
+.table-scroll { overflow: auto; max-height: calc(100vh - 420px); min-height: 300px; }
+
+table.data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+
+table.data-table thead th {
+  background: var(--navy-800); color: var(--blue-100); font-weight: 600;
+  padding: 8px 10px; text-align: center;
+  border-right: 1px solid var(--navy-600); border-bottom: 1px solid var(--navy-600);
+  white-space: nowrap; position: sticky; top: 0; z-index: 10; user-select: none;
+}
+table.data-table thead tr:nth-child(2) th {
+  top: 36px; z-index: 9; background: var(--navy-700); font-weight: 500; font-size: 12px;
+  padding: 6px 8px; border-bottom: 1px solid var(--navy-600);
+}
+th.group-header { border-bottom: 1px solid var(--navy-500) !important; }
+th.col-header { cursor: pointer; transition: background .12s; }
+th.col-header:hover { background: var(--navy-600); }
+th.col-header .sort-icon { display: inline-block; margin-left: 4px; font-size: 10px; opacity: 0.5; transition: opacity .12s; }
+th.col-header:hover .sort-icon { opacity: 0.8; }
+th.col-header.sorted .sort-icon { opacity: 1; color: #7dd3fc; }
+th.col-header.sorted { background: var(--navy-600); }
+
+th.fixed-col, td.fixed-col { position: sticky; z-index: 5; background: var(--navy-800); }
+th.fixed-col.col-2, td.fixed-col.col-2 { z-index: 6; left: 44px; }
+th.fixed-col { z-index: 11; }
+th.fixed-col.col-2 { z-index: 12; }
+td.fixed-col.col-1 { left: 0; }
+td.fixed-col.col-2 { left: 44px; }
+
+table.data-table tbody td {
+  padding: 6px 10px; text-align: right;
+  border-right: 1px solid var(--slate-100); border-bottom: 1px solid var(--slate-100);
+  color: var(--slate-700);
+}
+table.data-table tbody td.text-col { text-align: left; }
+table.data-table tbody td.center-col { text-align: center; }
+table.data-table tbody tr:nth-child(even) td { background: var(--slate-50); }
+table.data-table tbody tr:hover td { background: var(--blue-50) !important; }
+td.fixed-col.col-1 { background: var(--white) !important; }
+table.data-table tbody tr:nth-child(even) td.fixed-col.col-1 { background: var(--slate-50) !important; }
+table.data-table tbody tr:hover td.fixed-col.col-1 { background: var(--blue-50) !important; }
+td.fixed-col.col-2 { background: var(--white) !important; }
+table.data-table tbody tr:nth-child(even) td.fixed-col.col-2 { background: var(--slate-50) !important; }
+table.data-table tbody tr:hover td.fixed-col.col-2 { background: var(--blue-50) !important; }
+
+.type-badge { display: inline-block; padding: 1px 8px; border-radius: 3px; font-size: 11px; font-weight: 500; }
+.type-badge.贸易 { background: #dbeafe; color: #1e40af; }
+.type-badge.物流 { background: #d1fae5; color: #065f46; }
+.type-badge.加工 { background: #fef3c7; color: #92400e; }
+.type-badge.物流报关 { background: #ede9fe; color: #5b21b6; }
+
+.val-positive { color: var(--red); }
+.val-negative { color: var(--teal); }
+
+table.data-table tfoot td {
+  background: var(--navy-700) !important; color: var(--blue-100); font-weight: 600;
+  padding: 8px 10px; text-align: right;
+  border-right: 1px solid var(--navy-600); border-top: 2px solid var(--navy-500);
+  position: sticky; bottom: 0;
+}
+table.data-table tfoot td.text-col { text-align: left; }
+table.data-table tfoot td.center-col { text-align: center; }
+table.data-table tfoot td.fixed-col { z-index: 5; }
+
+.no-data { text-align: center; padding: 60px 20px; color: var(--slate-400); }
+.no-data .icon { font-size: 40px; margin-bottom: 12px; }
+
+.pagination {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; border-top: 1px solid var(--slate-200);
+  background: var(--slate-50); font-size: 12px; color: var(--slate-500);
+}
+.pagination .page-controls { display: flex; align-items: center; gap: 4px; }
+.page-btn {
+  border: 1px solid var(--slate-300); background: var(--white); color: var(--slate-600);
+  padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer;
+  font-family: inherit; transition: all .12s;
+}
+.page-btn:hover:not(:disabled) { border-color: var(--blue-400); color: var(--navy-700); }
+.page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.page-btn.active { background: var(--navy-700); border-color: var(--navy-700); color: var(--white); }
+
+.table-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.table-scroll::-webkit-scrollbar-track { background: var(--slate-100); }
+.table-scroll::-webkit-scrollbar-thumb { background: var(--slate-300); border-radius: 4px; }
+.table-scroll::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
+
+.info-tip { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: var(--slate-400); padding: 2px 8px; background: var(--slate-100); border-radius: 4px; }
+
+@media (max-width: 768px) {
+  .filter-row { flex-direction: column; align-items: flex-start; }
+  .stat-card { min-width: 140px; }
+}
+
+/* ========== 企业名单管理抽屉 ========== */
+.drawer-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(15,39,64,0.45); z-index: 1000;
+  opacity: 0; pointer-events: none; transition: opacity .2s;
+}
+.drawer-overlay.open { opacity: 1; pointer-events: auto; }
+
+.drawer {
+  position: fixed; top: 0; right: -500px; bottom: 0;
+  width: 480px; max-width: 90vw; background: var(--white);
+  z-index: 1001; box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+  transition: right .25s ease; display: flex; flex-direction: column;
+}
+.drawer.open { right: 0; }
+.drawer-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; background: var(--navy-800); color: var(--white);
+}
+.drawer-header h3 { font-size: 16px; font-weight: 600; }
+.drawer-close {
+  background: none; border: none; color: var(--blue-300);
+  font-size: 22px; cursor: pointer; padding: 0; line-height: 1;
+  transition: color .12s;
+}
+.drawer-close:hover { color: var(--white); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+/* 上传区域 */
+.upload-area {
+  border: 2px dashed var(--slate-300); border-radius: 8px;
+  padding: 32px 20px; text-align: center; cursor: pointer;
+  transition: border-color .15s, background .15s; position: relative;
+}
+.upload-area:hover, .upload-area.dragover {
+  border-color: var(--blue-400); background: var(--blue-50);
+}
+.upload-area .upload-icon { font-size: 36px; margin-bottom: 8px; }
+.upload-area .upload-text { font-size: 14px; color: var(--slate-600); font-weight: 500; }
+.upload-area .upload-hint { font-size: 12px; color: var(--slate-400); margin-top: 4px; }
+.upload-area input[type="file"] {
+  position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+  opacity: 0; cursor: pointer;
+}
+
+.drawer-section { margin-top: 20px; }
+.drawer-section-title {
+  font-size: 13px; font-weight: 600; color: var(--slate-600);
+  margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid var(--slate-200);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* 版本卡片 */
+.version-card {
+  border: 1px solid var(--slate-200); border-radius: 8px;
+  padding: 14px; margin-bottom: 10px; transition: border-color .15s;
+}
+.version-card.active { border-color: var(--blue-400); background: var(--blue-50); }
+.version-card .vc-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.version-card .vc-name { font-size: 14px; font-weight: 600; color: var(--navy-800); display: flex; align-items: center; gap: 6px; }
+.version-card .vc-badge {
+  font-size: 10px; padding: 1px 8px; border-radius: 3px; font-weight: 600;
+  background: var(--teal); color: var(--white);
+}
+.version-card .vc-meta { font-size: 12px; color: var(--slate-500); margin-bottom: 8px; }
+.version-card .vc-actions { display: flex; gap: 6px; }
+
+.upload-status {
+  margin-top: 10px; padding: 10px 14px; border-radius: 6px; font-size: 13px;
+  display: none;
+}
+.upload-status.show { display: block; }
+.upload-status.success { background: var(--teal-light); color: var(--teal); }
+.upload-status.error { background: #fdf2f2; color: var(--red); }
+.upload-status.info { background: var(--blue-50); color: var(--navy-700); }
+
+/* 重命名输入 */
+.rename-input {
+  border: 1px solid var(--blue-400); border-radius: 4px;
+  padding: 2px 8px; font-size: 14px; font-family: inherit;
+  outline: none; width: 100%;
+}
+</style>
+</head>
+<body>
+
+<!-- ====== 顶部标题栏 ====== -->
+<div class="top-bar">
+  <div class="logo-area">
+    <div class="logo-icon">📊</div>
+    <div>
+      <div class="title-text">舟山综合保税区 · 区内企业数据查询系统</div>
+      <div class="subtitle">Zhoushan Comprehensive Bonded Zone — Enterprise Data Query</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <button class="btn-version-mgmt" onclick="openDrawer()">📋 企业名单管理</button>
+    <div class="item"><span class="dot"></span> <span id="versionLabel">默认企业名单</span></div>
+    <div class="item" id="currentTime"></div>
+  </div>
+</div>
+
+<!-- ====== 筛选栏 ====== -->
+<div class="filter-section">
+  <div class="filter-row">
+    <div class="filter-group">
+      <span class="filter-label">年度</span>
+      <div class="select-wrap">
+        <select class="custom-select" id="yearSelect">
+          <option value="2026" selected>2026年</option>
+          <option value="2025">2025年</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <span class="filter-label">查询方式</span>
+      <div class="mode-toggle">
+        <button class="active" data-mode="single" onclick="switchMonthMode('single')">单月查询</button>
+        <button data-mode="range" onclick="switchMonthMode('range')">区间查询</button>
+      </div>
+    </div>
+
+    <div class="filter-group" id="singleMonthGroup">
+      <span class="filter-label">月份</span>
+      <div class="select-wrap">
+        <select class="custom-select" id="monthSelect">
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4" selected>4月</option><option value="5">5月</option><option value="6">6月</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-group" id="rangeMonthGroup" style="display:none;">
+      <span class="filter-label">月份范围</span>
+      <div class="select-wrap">
+        <select class="custom-select" id="monthStart">
+          <option value="1" selected>1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4">4月</option><option value="5">5月</option><option value="6">6月</option>
+        </select>
+      </div>
+      <span class="range-sep">至</span>
+      <div class="select-wrap">
+        <select class="custom-select" id="monthEnd">
+          <option value="1">1月</option><option value="2">2月</option><option value="3">3月</option>
+          <option value="4" selected>4月</option><option value="5">5月</option><option value="6">6月</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="filter-group" id="typeFilterGroup">
+      <span class="filter-label">企业类型</span>
+      <div id="typeChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+    </div>
+
+    <div class="filter-group" style="margin-left:auto;">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索企业名称…" oninput="renderTable()">
+    </div>
+  </div>
+
+  <div class="filter-row">
+    <span class="filter-label">显示指标</span>
+    <div class="metric-toggles" id="metricToggles"></div>
+  </div>
+</div>
+
+<!-- ====== 统计卡片 ====== -->
+<div class="stats-bar" id="statsBar"></div>
+
+<!-- ====== 数据表格 ====== -->
+<div class="table-section">
+  <div class="table-header">
+    <div class="th-title">企业数据明细</div>
+    <div class="th-info">
+      共 <span class="count" id="rowCount">0</span> 家企业
+      <span style="margin: 0 8px;">|</span>
+      <span id="periodLabel">2026年4月</span>
+      <span style="margin: 0 8px;">|</span>
+      <span class="info-tip">💡 点击列头排序：正序→倒序→取消</span>
+    </div>
+  </div>
+  <div class="table-scroll">
+    <table class="data-table" id="dataTable">
+      <thead id="tableHead"></thead>
+      <tbody id="tableBody"></tbody>
+      <tfoot id="tableFoot"></tfoot>
+    </table>
+  </div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<!-- ====== 企业名单管理抽屉 ====== -->
+<div class="drawer-overlay" id="drawerOverlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="versionDrawer">
+  <div class="drawer-header">
+    <h3>📋 企业名单版本管理</h3>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body">
+    <!-- 上传区域 -->
+    <div class="upload-area" id="uploadArea">
+      <div class="upload-icon">📁</div>
+      <div class="upload-text">上传 Excel 文件导入企业名单</div>
+      <div class="upload-hint">点击或拖拽 .xlsx / .xls 文件到此处</div>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileSelect(event)">
+    </div>
+    <div class="upload-status" id="uploadStatus"></div>
+
+    <div style="margin-top:12px;">
+      <button class="btn btn-sm" onclick="downloadTemplate()">📥 下载导入模板</button>
+    </div>
+
+    <!-- 版本列表 -->
+    <div class="drawer-section">
+      <div class="drawer-section-title">
+        <span>版本列表</span>
+        <span style="font-weight:400;font-size:12px;color:var(--slate-400);" id="versionCount"></span>
+      </div>
+      <div id="versionList"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+//  1. 默认企业列表（来源：区内企业数据.xlsx，共171家）
+// ============================================================
+const DEFAULT_ENTERPRISES = [
+  {name:"浙江浙石油燃料油销售有限公司",type:"贸易"},{name:"浙江自贸区中油泰富船舶燃料有限公司",type:"贸易"},
+  {name:"浙江自贸区腾兴石化有限公司",type:"贸易"},{name:"舟山英泰海事服务有限公司",type:"贸易"},
+  {name:"绪辉能源贸易（舟山）有限公司",type:"贸易"},{name:"浙江自贸区元骅供应链管理有限公司",type:"物流"},
+  {name:"中工建投（浙江）石油化工有限公司",type:"贸易"},{name:"中石油上港（舟山）能源有限公司",type:"贸易"},
+  {name:"托克能源（浙江）有限公司",type:"贸易"},{name:"舟山康联石油化工有限公司",type:"贸易"},
+  {name:"舟山市博创物流有限公司",type:"物流报关"},{name:"浙江海港国际贸易有限公司",type:"贸易"},
+  {name:"浙江自贸区优联国际贸易有限责任公司",type:"贸易"},{name:"中石化长江燃料（舟山）有限公司",type:"贸易"},
+  {name:"浙江舟山创竞能源有限公司",type:"贸易"},{name:"舟山市海岸通物流有限公司",type:"物流"},
+  {name:"浙江自贸区跨境电商服务有限公司",type:"物流"},{name:"陆泽能源（舟山）有限公司",type:"贸易"},
+  {name:"舟山黎明汽车零部件有限公司",type:"加工"},{name:"浙江自贸区泰顿船务有限公司",type:"物流"},
+  {name:"舟山艾科船务有限公司",type:"物流报关"},{name:"舟山烽旺船舶服务有限公司",type:"物流"},
+  {name:"浙江自贸区中石油燃料油有限责任公司",type:"贸易"},{name:"浙油供应链管理（舟山）有限公司",type:"贸易"},
+  {name:"浙江自贸区璟森物流服务有限公司",type:"物流"},{name:"舟山金地电子有限公司",type:"加工"},
+  {name:"浙江自贸区欣旺食品有限公司",type:"物流"},{name:"舟山港综合保税区舟捷物流有限公司",type:"物流"},
+  {name:"工银航空（舟山）飞机租赁有限公司",type:"物流"},{name:"舟山波音交付中心有限公司",type:"物流"},
+  {name:"舟山波音完工中心有限公司",type:"加工"},{name:"舟山航空投资发展有限公司",type:"物流"},
+  {name:"舟山鼠浪湖码头有限公司",type:"物流"},{name:"浙江卧龙矿业有限公司",type:"物流"},
+  {name:"舟山市港祺物流有限公司",type:"物流"},{name:"浙江舟山远东海盐制品有限责任公司",type:"加工"},
+  {name:"舟山航姆物流有限公司",type:"物流"},{name:"舟山港综合保税区紫金港国际贸易有限公司",type:"物流"},
+  {name:"舟山港综合保税区拓新物流服务有限公司",type:"物流"},{name:"浙江米沃德进出口有限公司",type:"物流"},
+  {name:"浙江载驰商贸有限公司",type:"贸易"},{name:"浙江荣维铂商贸有限公司",type:"贸易"},
+  {name:"舟山港综合保税区保税物流发展有限公司",type:"物流"},{name:"浙江永安国油能源有限公司",type:"贸易"},
+  {name:"浙江五波食品有限公司",type:"加工"},{name:"浙江兴森贸易有限公司",type:"贸易"},
+  {name:"中化石油（舟山）有限公司",type:"贸易"},{name:"浙江自贸区新嘉畅贸易有限公司",type:"贸易"},
+  {name:"舟山宁能能源有限公司",type:"贸易"},{name:"和淼能源科技（浙江自贸区）有限公司",type:"贸易"},
+  {name:"浙江锐弛石化有限公司",type:"贸易"},{name:"舟山海库进出口有限公司",type:"物流"},
+  {name:"舟山交通投资集团国际贸易有限公司",type:"贸易"},{name:"龙悦能源（舟山）有限公司",type:"贸易"},
+  {name:"浙江自贸区恒帆石油化工有限公司",type:"贸易"},{name:"舟山济海能源有限公司",type:"贸易"},
+  {name:"浙江自贸区科鲁达能源有限公司",type:"贸易"},{name:"浙江自贸区鑫天隆石油有限公司",type:"贸易"},
+  {name:"舟山联合石油化工有限公司",type:"贸易"},{name:"浙江神舟能源有限公司",type:"贸易"},
+  {name:"浙江好佳源食品有限公司",type:"加工"},{name:"浙江自贸区鑫成祥石油有限公司",type:"贸易"},
+  {name:"沛拓能源（浙江）有限公司",type:"贸易"},{name:"浙江自贸区芳榕生物科技有限公司",type:"加工"},
+  {name:"浙江亚拉那能源贸易有限公司",type:"贸易"},{name:"浙江自贸区印太能源有限公司",type:"贸易"},
+  {name:"浙江自贸区海龙汇生物科技有限公司",type:"加工"},{name:"浙银航舟三号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙江海港国际能源有限公司舟山分公司",type:"贸易"},{name:"中禄（舟山）石油化工有限公司",type:"贸易"},
+  {name:"浙银航舟二号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟七号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟四号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟五号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟六号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"舟山天汇融国际贸易有限公司",type:"贸易"},
+  {name:"中科华阳能源有限公司",type:"贸易"},{name:"浙江自由贸易试验区优跃创能源有限公司",type:"贸易"},
+  {name:"舟山禾润嘉石化有限公司",type:"贸易"},{name:"浙江舟山隆奕能源有限公司",type:"贸易"},
+  {name:"浙江贾维斯能源贸易有限公司",type:"贸易"},{name:"沃肯工贸（浙江自由贸易试验区）有限公司",type:"贸易"},
+  {name:"物产中大资本管理（浙江）有限公司",type:"贸易"},{name:"浙江自贸区锦发石油化工有限公司",type:"贸易"},
+  {name:"浙江自贸区诚通能源化工有限公司",type:"贸易"},{name:"浙银航舟八号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"物产中大国际贸易（舟山）有限公司",type:"贸易"},{name:"浙银航舟十七号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟十六号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙江自贸区圣杉生物科技有限公司",type:"加工"},
+  {name:"浙银航舟十三号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟十四号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟十五号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟十八号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟十九号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟二十号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙江宏壹能源有限公司",type:"贸易"},{name:"浙江建发能源有限公司",type:"贸易"},
+  {name:"浙江自贸区普洛菲特石油化工有限公司",type:"贸易"},{name:"浙江尧淏陆能源有限公司",type:"贸易"},
+  {name:"浙银航舟九号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟十号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟十一号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟十二号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙江天之源石油化工有限公司",type:"贸易"},{name:"宝弘（舟山）能源有限公司",type:"贸易"},
+  {name:"浙江冀港能源有限公司",type:"贸易"},{name:"舟山加美新材料有限公司",type:"加工"},
+  {name:"浙银航舟二十一号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙江铕鑫科技有限公司",type:"贸易"},
+  {name:"浙江海上鲜新能源有限公司",type:"贸易"},{name:"浙江鸿灵能源有限公司",type:"贸易"},
+  {name:"浙银航舟二十三号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟二十二号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙江宏云赢骏石油有限公司",type:"贸易"},{name:"海福德（舟山）海洋食品有限公司",type:"加工"},
+  {name:"浙银航舟二十七号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟二十八号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"中启汇鹏（舟山）能源有限公司",type:"贸易"},{name:"浙银航舟二十九号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟二十六号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙银航舟三十号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"舟山聚能能源有限公司",type:"贸易"},{name:"浙江蓝鲲石油化工有限公司",type:"贸易"},
+  {name:"浙江振启能源贸易有限公司",type:"贸易"},{name:"浙江舟山天程石油化工有限公司",type:"贸易"},
+  {name:"明日（舟山）能源有限公司",type:"贸易"},{name:"浙江舟山尚荣石油化工有限公司",type:"贸易"},
+  {name:"浙江自贸区金铭能源科技有限公司",type:"贸易"},{name:"恒力（舟山）能化有限公司",type:"贸易"},
+  {name:"浙江茵汉驰能源有限公司",type:"贸易"},{name:"浙江北堪能源有限公司",type:"贸易"},
+  {name:"浙银航舟三十二号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"物产中大油气（浙江）有限公司",type:"贸易"},
+  {name:"浙江越融能源有限公司",type:"贸易"},{name:"浙江东岛进出口有限公司",type:"贸易"},
+  {name:"浙江宽鑫进出口有限公司",type:"贸易"},{name:"浙江舟山国骏石化有限公司",type:"贸易"},
+  {name:"凯盛物产（舟山）有限公司",type:"贸易"},{name:"律动能源贸易（浙江）有限公司",type:"贸易"},
+  {name:"舟山市兰方供应链管理有限公司",type:"物流"},{name:"浙银航舟三十七号（舟山群岛新区）租赁有限公司",type:"贸易"},
+  {name:"浙江自贸区华玺晟能源化工有限公司",type:"贸易"},{name:"卧龙（舟山）供应链管理有限公司",type:"贸易"},
+  {name:"玛诗渥能源有限公司",type:"贸易"},{name:"舟山海领达供应链管理有限公司",type:"物流"},
+  {name:"舟山港综合保税区舟进物流有限公司",type:"物流"},{name:"舟山中曼昆仑能源有限公司",type:"贸易"},
+  {name:"舟山永正泉贸易有限公司",type:"贸易"},{name:"浙江乾毓国际贸易有限公司",type:"贸易"},
+  {name:"浙江润舶能源有限公司",type:"贸易"},{name:"浙江敦和资源有限公司",type:"贸易"},
+  {name:"浙银航舟四十二号（舟山群岛新区）租赁有限公司",type:"贸易"},{name:"浙银航舟四十一号（舟山群岛新区）租赁有限公司",type:"贸易"},
+  {name:"浙江金油物产有限公司",type:"贸易"},{name:"浙江自贸区刚起石油化工有限公司",type:"贸易"},
+  {name:"浙江洪鑫瀚玺石油化工有限公司",type:"贸易"},{name:"浙银航舟三十三号（浙江自贸区）租赁有限公司",type:"贸易"},
+  {name:"浙银航舟三十四号（浙江自贸区）租赁有限公司",type:"贸易"},{name:"浙江舟山亚能供应链管理有限公司",type:"贸易"},
+  {name:"舟山优嘉物流有限公司",type:"物流"},{name:"舟山禹创国际贸易有限公司",type:"贸易"},
+  {name:"艾伽盾科技（浙江）有限公司",type:"贸易"},{name:"舟山市泛青科技有限公司",type:"贸易"},
+  {name:"浙江瑞联能源有限公司",type:"贸易"},{name:"浙江青璟能源有限公司",type:"贸易"},
+  {name:"浙江自贸区源巨新石油化工有限公司",type:"贸易"},{name:"中成广源（舟山）贸易有限公司",type:"贸易"},
+  {name:"舟山杭叉国际融资租赁有限公司",type:"贸易"},{name:"浙江自贸区国晋能源有限公司",type:"贸易"},
+  {name:"舟山寰球海事服务有限公司",type:"物流"},
+];
+
+// ============================================================
+//  2. 指标定义（修改：移除跨境电商，新增3个指标）
+// ============================================================
+const METRICS = [
+  { key: "yj_inout_vol", name: "一线进出境货量", unit: "万吨", isVol: true },
+  { key: "yj_inout_val", name: "一线进出境货值", unit: "亿元", isVol: false },
+  { key: "yj_in_vol",    name: "一线进境货量",   unit: "万吨", isVol: true },
+  { key: "yj_in_val",    name: "一线进境货值",   unit: "亿元", isVol: false },
+  { key: "yj_out_vol",   name: "一线出境货量",   unit: "万吨", isVol: true },
+  { key: "yj_out_val",   name: "一线出境货值",   unit: "亿元", isVol: false },
+  { key: "ex_inout_vol", name: "二线进出区货量", unit: "万吨", isVol: true },
+  { key: "ex_inout_val", name: "二线进出区货值", unit: "亿元", isVol: false },
+  { key: "ex_in_vol",    name: "二线进区货量",   unit: "万吨", isVol: true },
+  { key: "ex_in_val",    name: "二线进区货值",   unit: "亿元", isVol: false },
+  { key: "ex_out_vol",   name: "二线出区货量",   unit: "万吨", isVol: true },
+  { key: "ex_out_val",   name: "二线出区货值",   unit: "亿元", isVol: false },
+  { key: "bs_in_val",    name: "保税业务进口值", unit: "亿元", isVol: false },
+  { key: "bs_out_val",   name: "保税业务出口值", unit: "亿元", isVol: false },
+  { key: "bs_inout_val", name: "保税业务进出口值", unit: "亿元", isVol: false },
+  // [移除] 跨境电商业务进出口值
+  // [新增] 以下3个指标
+  { key: "qy_val",       name: "区域内销进口货值", unit: "亿元", isVol: false },
+  { key: "wx_val",       name: "维修业务进出口值", unit: "亿元", isVol: false },
+  { key: "zl_val",       name: "租赁业务进出口值", unit: "亿元", isVol: false },
+];
+
+// 子项定义：单月模式显示全部4项，区间模式仅显示累计+累计同比
+const ALL_SUB_KEYS = [
+  { key: "current", label: "当月" },
+  { key: "yoy",     label: "同比%" },
+  { key: "cumul",   label: "累计" },
+  { key: "cumYoy",  label: "累计同比%" },
+];
+const RANGE_SUB_KEYS = [
+  { key: "cumul",   label: "累计" },
+  { key: "cumYoy",  label: "累计同比%" },
+];
+
+function getActiveSubKeys() {
+  return STATE.monthMode === "range" ? RANGE_SUB_KEYS : ALL_SUB_KEYS;
+}
+
+// ============================================================
+//  3. 模拟数据生成
+// ============================================================
+function seededRandom(seed) {
+  let s = seed;
+  return function() { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+function generateValue(rng, ent, enterpriseIndex, metric, month) {
+  const typeWeight = { "贸易": 1.0, "物流": 0.7, "加工": 0.4, "物流报关": 0.5 };
+  const weight = typeWeight[ent.type] || 0.5;
+  const sizeFactor = enterpriseIndex < 10 ? 1.0 + rng() * 0.8
+                   : enterpriseIndex < 30 ? 0.6 + rng() * 0.6
+                   : enterpriseIndex < 80 ? 0.3 + rng() * 0.4
+                   : 0.05 + rng() * 0.2;
+  let base = metric.isVol
+    ? 25 * weight * sizeFactor * (0.3 + rng() * 0.7)
+    : 15 * weight * sizeFactor * (0.3 + rng() * 0.7);
+  const monthFactor = [0.8, 0.65, 0.9, 1.0, 1.05, 1.1][month - 1] || 1.0;
+  base *= monthFactor;
+  if (rng() < 0.15) base = 0;
+  return Math.round(base * 100) / 100;
+}
+
+function generateYoy(rng) {
+  const v = (rng() - 0.35) * 80;
+  return Math.round(v * 100) / 100;
+}
+
+const MONTHS = [1, 2, 3, 4, 5, 6];
+
+// 可变数据：随企业名单版本切换而重新生成
+let activeEnterprises = [...DEFAULT_ENTERPRISES];
+let DATA = [];
+
+function regenerateData() {
+  DATA = [];
+  for (let i = 0; i < activeEnterprises.length; i++) {
+    const ent = activeEnterprises[i];
+    const entData = {};
+    for (const m of MONTHS) {
+      const rng = seededRandom(i * 1000 + m * 37 + 17);
+      entData[m] = {};
+      for (const metric of METRICS) {
+        const current = generateValue(rng, ent, i, metric, m);
+        const yoy = current > 0 ? generateYoy(rng) : 0;
+        let cumul = current;
+        if (m > 1 && entData[m - 1] && entData[m - 1][metric.key]) {
+          cumul = Math.round((entData[m - 1][metric.key].cumul + current) * 100) / 100;
+        }
+        const cumYoy = current > 0 ? generateYoy(rng) : 0;
+        entData[m][metric.key] = { current, yoy, cumul, cumYoy };
+      }
+    }
+    DATA.push(entData);
+  }
+}
+
+// ============================================================
+//  4. 状态管理
+// ============================================================
+const STATE = {
+  year: 2026,
+  monthMode: "single",
+  singleMonth: 4,
+  rangeStart: 1,
+  rangeEnd: 4,
+  typeFilter: "all",
+  search: "",
+  sortKey: null,
+  sortDir: "asc",
+  visibleMetrics: new Set(METRICS.map(m => m.key)),
+  page: 1,
+  pageSize: 50,
+};
+
+// ============================================================
+//  5. 版本管理（localStorage）
+// ============================================================
+const STORAGE_KEY = "zsftz_enterprise_versions";
+const ACTIVE_KEY = "zsftz_active_version";
+
+function getAllVersions() {
+  let stored = [];
+  try { stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch(e) {}
+  // 始终包含默认版本
+  const defaultVer = { id: "default", name: "默认企业名单（171家）", createdAt: "2026-07-09", isDefault: true, enterprises: DEFAULT_ENTERPRISES };
+  return [defaultVer, ...stored];
+}
+
+function getStoredVersions() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]"); } catch(e) { return []; }
+}
+
+function saveStoredVersions(versions) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(versions)); }
+  catch(e) { alert("保存失败，浏览器存储空间可能不足。"); }
+}
+
+function getActiveVersionId() {
+  return localStorage.getItem(ACTIVE_KEY) || "default";
+}
+
+function setActiveVersionId(id) {
+  localStorage.setItem(ACTIVE_KEY, id);
+}
+
+function activateVersion(versionId) {
+  const versions = getAllVersions();
+  const ver = versions.find(v => v.id === versionId);
+  if (!ver) return;
+  setActiveVersionId(versionId);
+  activeEnterprises = ver.enterprises;
+  regenerateData();
+  // 重置筛选状态
+  STATE.typeFilter = "all";
+  STATE.search = "";
+  STATE.sortKey = null;
+  STATE.sortDir = "asc";
+  STATE.page = 1;
+  document.getElementById("searchInput").value = "";
+  // 更新版本标签
+  document.getElementById("versionLabel").textContent = ver.name;
+  // 重新渲染
+  renderTypeChips();
+  renderMetricToggles();
+  renderTable();
+  renderVersionList();
+}
+
+// ============================================================
+//  6. 数据查询函数
+// ============================================================
+function getCurrentPeriodLabel() {
+  if (STATE.monthMode === "single") return `${STATE.year}年${STATE.singleMonth}月`;
+  if (STATE.rangeStart === STATE.rangeEnd) return `${STATE.year}年${STATE.rangeStart}月`;
+  return `${STATE.year}年${STATE.rangeStart}月—${STATE.rangeEnd}月`;
+}
+
+function getRowData(entIndex) {
+  const ent = activeEnterprises[entIndex];
+  const row = { index: entIndex + 1, name: ent.name, type: ent.type, metrics: {} };
+
+  if (STATE.monthMode === "single") {
+    const m = STATE.singleMonth;
+    const mData = DATA[entIndex][m];
+    for (const metric of METRICS) {
+      const d = mData[metric.key];
+      row.metrics[metric.key] = { current: d.current, yoy: d.yoy, cumul: d.cumul, cumYoy: d.cumYoy };
+    }
+  } else {
+    const startM = Math.min(STATE.rangeStart, STATE.rangeEnd);
+    const endM = Math.max(STATE.rangeStart, STATE.rangeEnd);
+    for (const metric of METRICS) {
+      let sumCurrent = 0;
+      for (let m = startM; m <= endM; m++) sumCurrent += DATA[entIndex][m][metric.key].current;
+      sumCurrent = Math.round(sumCurrent * 100) / 100;
+      // 区间模式：累计=区间内各月之和，累计同比取末月
+      const cumYoy = DATA[entIndex][endM][metric.key].cumYoy;
+      row.metrics[metric.key] = { current: sumCurrent, yoy: 0, cumul: sumCurrent, cumYoy };
+    }
+  }
+  return row;
+}
+
+function getFilteredRows() {
+  let rows = [];
+  for (let i = 0; i < activeEnterprises.length; i++) {
+    const ent = activeEnterprises[i];
+    if (STATE.typeFilter !== "all" && ent.type !== STATE.typeFilter) continue;
+    if (STATE.search && !ent.name.includes(STATE.search.trim())) continue;
+    rows.push(getRowData(i));
+  }
+  if (STATE.sortKey) {
+    rows.sort((a, b) => {
+      let va, vb;
+      if (STATE.sortKey === "index") { va = a.index; vb = b.index; }
+      else if (STATE.sortKey === "name") { va = a.name; vb = b.name; }
+      else if (STATE.sortKey === "type") { va = a.type; vb = b.type; }
+      else { const [mk, sk] = STATE.sortKey.split("."); va = a.metrics[mk][sk]; vb = b.metrics[mk][sk]; }
+      if (typeof va === "string") return STATE.sortDir === "asc" ? va.localeCompare(vb, "zh") : vb.localeCompare(va, "zh");
+      return STATE.sortDir === "asc" ? va - vb : vb - va;
+    });
+  }
+  return rows;
+}
+
+function getUniqueTypes() {
+  const types = new Set();
+  for (const ent of activeEnterprises) types.add(ent.type);
+  return Array.from(types).sort();
+}
+
+// ============================================================
+//  7. 渲染函数
+// ============================================================
+function fmtNum(v, d = 2) { if (v === 0 || v == null) return "—"; return Number(v).toFixed(d); }
+function fmtYoy(v) { if (v === 0 || v == null) return "—"; const s = v > 0 ? "+" : ""; return s + Number(v).toFixed(2) + "%"; }
+
+function renderTypeChips() {
+  const container = document.getElementById("typeChips");
+  const types = getUniqueTypes();
+  let html = `<button class="type-chip ${STATE.typeFilter === 'all' ? 'active' : ''}" data-type="all" onclick="filterType('all')">全部</button>`;
+  for (const t of types) {
+    html += `<button class="type-chip ${STATE.typeFilter === t ? 'active' : ''}" data-type="${t}" onclick="filterType('${t}')">${t}</button>`;
+  }
+  container.innerHTML = html;
+}
+
+function renderMetricToggles() {
+  const container = document.getElementById("metricToggles");
+  container.innerHTML = METRICS.map(m => {
+    const active = STATE.visibleMetrics.has(m.key) ? "active" : "";
+    return `<span class="metric-toggle ${active}" onclick="toggleMetric('${m.key}')">${m.name}</span>`;
+  }).join("");
+}
+
+function toggleMetric(key) {
+  if (STATE.visibleMetrics.has(key)) STATE.visibleMetrics.delete(key);
+  else STATE.visibleMetrics.add(key);
+  if (STATE.sortKey && STATE.sortKey.includes(".")) {
+    const [mk] = STATE.sortKey.split(".");
+    if (!STATE.visibleMetrics.has(mk)) { STATE.sortKey = null; STATE.sortDir = "asc"; }
+  }
+  renderMetricToggles();
+  renderTable();
+}
+
+function renderTableHead() {
+  const thead = document.getElementById("tableHead");
+  const visibleMetrics = METRICS.filter(m => STATE.visibleMetrics.has(m.key));
+  const subKeys = getActiveSubKeys();
+
+  let row1 = "<tr>";
+  row1 += `<th class="fixed-col col-1 group-header" rowspan="2" style="width:44px;min-width:44px;">序号</th>`;
+  row1 += `<th class="fixed-col col-2 group-header" rowspan="2" style="min-width:200px;left:44px;">企业名称</th>`;
+  row1 += `<th class="group-header" rowspan="2" style="min-width:80px;">企业类型</th>`;
+  for (const m of visibleMetrics) {
+    row1 += `<th class="group-header" colspan="${subKeys.length}">${m.name}（${m.unit}）</th>`;
+  }
+  row1 += "</tr>";
+
+  let row2 = "<tr>";
+  for (const m of visibleMetrics) {
+    for (const sk of subKeys) {
+      const sortKey = `${m.key}.${sk.key}`;
+      const isSorted = STATE.sortKey === sortKey;
+      const sortIcon = isSorted ? (STATE.sortDir === "asc" ? "▲" : "▼") : "⇅";
+      const sortedClass = isSorted ? "sorted" : "";
+      row2 += `<th class="col-header ${sortedClass}" onclick="sortBy('${sortKey}')" title="点击排序：正序→倒序→取消">${sk.label} <span class="sort-icon">${sortIcon}</span></th>`;
+    }
+  }
+  row2 += "</tr>";
+  thead.innerHTML = row1 + row2;
+}
+
+function renderTableBody(rows) {
+  const tbody = document.getElementById("tableBody");
+  const visibleMetrics = METRICS.filter(m => STATE.visibleMetrics.has(m.key));
+  const subKeys = getActiveSubKeys();
+
+  const totalPages = Math.ceil(rows.length / STATE.pageSize) || 1;
+  if (STATE.page > totalPages) STATE.page = 1;
+  const start = (STATE.page - 1) * STATE.pageSize;
+  const pageRows = rows.slice(start, start + STATE.pageSize);
+
+  if (pageRows.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${3 + visibleMetrics.length * subKeys.length}" class="no-data"><div class="icon">📭</div>暂无符合条件的数据</td></tr>`;
+    return;
+  }
+
+  let html = "";
+  for (const row of pageRows) {
+    html += "<tr>";
+    html += `<td class="fixed-col col-1 center-col">${row.index}</td>`;
+    html += `<td class="fixed-col col-2 text-col" style="left:44px;">${row.name}</td>`;
+    html += `<td class="center-col"><span class="type-badge ${row.type}">${row.type}</span></td>`;
+    for (const m of visibleMetrics) {
+      const d = row.metrics[m.key];
+      for (const sk of subKeys) {
+        const val = d[sk.key];
+        if (sk.key === "yoy" || sk.key === "cumYoy") {
+          const cls = val > 0 ? "val-positive" : (val < 0 ? "val-negative" : "");
+          html += `<td class="${cls}">${fmtYoy(val)}</td>`;
+        } else {
+          html += `<td>${fmtNum(val)}</td>`;
+        }
+      }
+    }
+    html += "</tr>";
+  }
+  tbody.innerHTML = html;
+}
+
+function renderTableFoot(rows) {
+  const tfoot = document.getElementById("tableFoot");
+  const visibleMetrics = METRICS.filter(m => STATE.visibleMetrics.has(m.key));
+  const subKeys = getActiveSubKeys();
+
+  const totals = {};
+  for (const m of visibleMetrics) totals[m.key] = { current: 0, yoy: 0, cumul: 0, cumYoy: 0, yoyCount: 0, cumYoyCount: 0 };
+  for (const row of rows) {
+    for (const m of visibleMetrics) {
+      const d = row.metrics[m.key];
+      totals[m.key].current += d.current;
+      totals[m.key].cumul += d.cumul;
+      if (d.yoy !== 0) { totals[m.key].yoy += d.yoy; totals[m.key].yoyCount++; }
+      if (d.cumYoy !== 0) { totals[m.key].cumYoy += d.cumYoy; totals[m.key].cumYoyCount++; }
+    }
+  }
+
+  let html = "<tr>";
+  html += `<td class="fixed-col col-1 center-col">—</td>`;
+  html += `<td class="fixed-col col-2 text-col" style="left:44px;">合计（${rows.length}家）</td>`;
+  html += `<td class="center-col">—</td>`;
+  for (const m of visibleMetrics) {
+    const t = totals[m.key];
+    for (const sk of subKeys) {
+      if (sk.key === "yoy") {
+        const avg = t.yoyCount > 0 ? t.yoy / t.yoyCount : 0;
+        const cls = avg > 0 ? "val-positive" : (avg < 0 ? "val-negative" : "");
+        html += `<td class="${cls}">${fmtYoy(avg)}</td>`;
+      } else if (sk.key === "cumYoy") {
+        const avg = t.cumYoyCount > 0 ? t.cumYoy / t.cumYoyCount : 0;
+        const cls = avg > 0 ? "val-positive" : (avg < 0 ? "val-negative" : "");
+        html += `<td class="${cls}">${fmtYoy(avg)}</td>`;
+      } else if (sk.key === "current") {
+        html += `<td>${fmtNum(t.current)}</td>`;
+      } else {
+        html += `<td>${fmtNum(t.cumul)}</td>`;
+      }
+    }
+  }
+  html += "</tr>";
+  tfoot.innerHTML = html;
+}
+
+function renderStats(rows) {
+  const bar = document.getElementById("statsBar");
+  const keyMetrics = [
+    { key: "yj_inout_val", label: "一线进出境货值", unit: "亿元" },
+    { key: "ex_inout_val", label: "二线进出区货值", unit: "亿元" },
+    { key: "bs_inout_val", label: "保税业务进出口值", unit: "亿元" },
+    { key: "qy_val",       label: "区域内销进口货值", unit: "亿元" },
+    { key: "wx_val",       label: "维修业务进出口值", unit: "亿元" },
+    { key: "zl_val",       label: "租赁业务进出口值", unit: "亿元" },
+  ];
+  const valKey = STATE.monthMode === "range" ? "cumul" : "current";
+
+  let html = `<div class="stat-card"><div class="stat-label">查询企业数</div><div class="stat-value">${rows.length}<span class="stat-unit">家</span></div></div>`;
+  for (const km of keyMetrics) {
+    let total = 0;
+    for (const row of rows) total += row.metrics[km.key][valKey];
+    html += `<div class="stat-card"><div class="stat-label">${km.label}（${km.unit}）</div><div class="stat-value">${fmtNum(total)}<span class="stat-unit">${km.unit}</span></div></div>`;
+  }
+  bar.innerHTML = html;
+}
+
+function renderPagination(totalRows) {
+  const container = document.getElementById("pagination");
+  const totalPages = Math.ceil(totalRows / STATE.pageSize) || 1;
+  let html = `<div>共 ${totalRows} 条记录，第 ${STATE.page}/${totalPages} 页，每页 ${STATE.pageSize} 条</div><div class="page-controls">`;
+  html += `<button class="page-btn" onclick="goPage(1)" ${STATE.page === 1 ? "disabled" : ""}>首页</button>`;
+  html += `<button class="page-btn" onclick="goPage(${STATE.page - 1})" ${STATE.page === 1 ? "disabled" : ""}>上一页</button>`;
+  let sP = Math.max(1, STATE.page - 2), eP = Math.min(totalPages, sP + 4);
+  sP = Math.max(1, eP - 4);
+  for (let p = sP; p <= eP; p++) html += `<button class="page-btn ${p === STATE.page ? "active" : ""}" onclick="goPage(${p})">${p}</button>`;
+  html += `<button class="page-btn" onclick="goPage(${STATE.page + 1})" ${STATE.page >= totalPages ? "disabled" : ""}>下一页</button>`;
+  html += `<button class="page-btn" onclick="goPage(${totalPages})" ${STATE.page >= totalPages ? "disabled" : ""}>末页</button>`;
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+function renderTable() {
+  const rows = getFilteredRows();
+  document.getElementById("rowCount").textContent = rows.length;
+  document.getElementById("periodLabel").textContent = getCurrentPeriodLabel();
+  renderTableHead();
+  renderTableBody(rows);
+  renderTableFoot(rows);
+  renderStats(rows);
+  renderPagination(rows.length);
+}
+
+// ============================================================
+//  8. 交互函数
+// ============================================================
+function switchMonthMode(mode) {
+  STATE.monthMode = mode;
+  STATE.page = 1;
+  // 切换模式时，如果排序列在新区间模式下不可见，则清除排序
+  if (mode === "range" && STATE.sortKey && STATE.sortKey.includes(".")) {
+    const sk = STATE.sortKey.split(".")[1];
+    if (sk === "current" || sk === "yoy") { STATE.sortKey = null; STATE.sortDir = "asc"; }
+  }
+  document.querySelectorAll(".mode-toggle button").forEach(btn => btn.classList.toggle("active", btn.dataset.mode === mode));
+  document.getElementById("singleMonthGroup").style.display = mode === "single" ? "flex" : "none";
+  document.getElementById("rangeMonthGroup").style.display = mode === "range" ? "flex" : "none";
+  renderTable();
+}
+
+function filterType(type) {
+  STATE.typeFilter = type; STATE.page = 1;
+  renderTypeChips(); renderTable();
+}
+
+// 三态排序：正序 → 倒序 → 取消 → 正序 ...
+function sortBy(sortKey) {
+  if (STATE.sortKey === sortKey) {
+    if (STATE.sortDir === "asc") STATE.sortDir = "desc";
+    else { STATE.sortKey = null; STATE.sortDir = "asc"; }
+  } else {
+    STATE.sortKey = sortKey;
+    STATE.sortDir = "asc";
+  }
+  renderTable();
+}
+
+function goPage(p) { STATE.page = p; renderTable(); document.querySelector(".table-scroll").scrollTop = 0; }
+
+// ============================================================
+//  9. 企业名单管理 - 抽屉
+// ============================================================
+function openDrawer() {
+  document.getElementById("drawerOverlay").classList.add("open");
+  document.getElementById("versionDrawer").classList.add("open");
+  renderVersionList();
+}
+function closeDrawer() {
+  document.getElementById("drawerOverlay").classList.remove("open");
+  document.getElementById("versionDrawer").classList.remove("open");
+}
+
+function renderVersionList() {
+  const container = document.getElementById("versionList");
+  const versions = getAllVersions();
+  const activeId = getActiveVersionId();
+  document.getElementById("versionCount").textContent = `共 ${versions.length} 个版本`;
+
+  container.innerHTML = versions.map(v => {
+    const isActive = v.id === activeId;
+    return `<div class="version-card ${isActive ? "active" : ""}">
+      <div class="vc-header">
+        <div class="vc-name">${v.isDefault ? "⭐ " : ""}${v.name} ${isActive ? '<span class="vc-badge">当前</span>' : ""}</div>
+      </div>
+      <div class="vc-meta">${v.enterprises.length} 家企业 · 导入于 ${v.createdAt}</div>
+      <div class="vc-actions">
+        ${!isActive ? `<button class="btn btn-sm btn-primary" onclick="activateVersion('${v.id}')">切换到此版本</button>` : ""}
+        ${!v.isDefault ? `<button class="btn btn-sm" onclick="renameVersion('${v.id}')">重命名</button>` : ""}
+        ${!v.isDefault ? `<button class="btn btn-sm btn-danger" onclick="deleteVersion('${v.id}')">删除</button>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function showUploadStatus(type, msg) {
+  const el = document.getElementById("uploadStatus");
+  el.className = `upload-status show ${type}`;
+  el.textContent = msg;
+}
+
+function handleFileSelect(event) {
+  const file = event.target.files[0];
+  if (file) handleFile(file);
+  event.target.value = ""; // reset
+}
+
+function handleFile(file) {
+  if (typeof XLSX === "undefined") {
+    showUploadStatus("error", "❌ Excel解析库未加载，请检查网络连接后刷新页面重试。");
+    return;
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    showUploadStatus("error", "❌ 文件过大（超过5MB），请精简后重试。");
+    return;
+  }
+
+  showUploadStatus("info", "⏳ 正在解析文件...");
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+      // 自动检测表头行：查找包含"企业名称"或"名称"的行
+      let headerRowIdx = -1, nameCol = -1, typeCol = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const row = rows[i];
+        for (let j = 0; j < row.length; j++) {
+          const cell = String(row[j] || "").trim();
+          if (cell.includes("企业名称") || cell === "名称" || cell.includes("企业全称")) nameCol = j;
+          if (cell.includes("企业类型") || cell === "类型") typeCol = j;
+        }
+        if (nameCol >= 0) { headerRowIdx = i; break; }
+      }
+
+      // 如果没找到表头，默认第一列是名称，第二列是类型
+      if (headerRowIdx === -1) {
+        headerRowIdx = -1; // 无表头，从第0行开始读数据
+        nameCol = 0;
+        typeCol = 1;
+      }
+
+      // 提取企业数据
+      const enterprises = [];
+      const startRow = headerRowIdx + 1;
+      for (let i = startRow; i < rows.length; i++) {
+        const row = rows[i];
+        const name = String(row[nameCol] || "").trim();
+        if (!name) continue;
+        const type = String(row[typeCol] || "").trim() || "贸易";
+        enterprises.push({ name, type });
+      }
+
+      if (enterprises.length === 0) {
+        showUploadStatus("error", "❌ 未找到有效企业数据。请确保文件包含「企业名称」列。");
+        return;
+      }
+
+      // 去重
+      const seen = new Set();
+      const unique = [];
+      for (const ent of enterprises) {
+        if (!seen.has(ent.name)) { seen.add(ent.name); unique.push(ent); }
+      }
+
+      // 创建新版本
+      const now = new Date();
+      const dateStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,"0")}-${String(now.getDate()).padStart(2,"0")}`;
+      const timeStr = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}`;
+      const versionId = "v_" + Date.now();
+      const versionName = file.name.replace(/\.(xlsx|xls)$/i, "").substring(0, 30);
+
+      const newVersion = {
+        id: versionId,
+        name: versionName,
+        createdAt: `${dateStr} ${timeStr}`,
+        isDefault: false,
+        enterprises: unique,
+      };
+
+      // 保存到 localStorage
+      const stored = getStoredVersions();
+      stored.push(newVersion);
+      saveStoredVersions(stored);
+
+      // 激活新版本
+      activateVersion(versionId);
+
+      showUploadStatus("success", `✅ 导入成功！共解析出 ${unique.length} 家企业（去重后），已创建版本"${versionName}"并切换为当前版本。`);
+    } catch(err) {
+      showUploadStatus("error", "❌ 文件解析失败：" + err.message);
+    }
+  };
+  reader.onerror = function() { showUploadStatus("error", "❌ 文件读取失败。"); };
+  reader.readAsArrayBuffer(file);
+}
+
+function renameVersion(id) {
+  const versions = getAllVersions();
+  const ver = versions.find(v => v.id === id);
+  if (!ver) return;
+  const newName = prompt("请输入新版本名称：", ver.name);
+  if (newName && newName.trim()) {
+    if (ver.isDefault) return;
+    const stored = getStoredVersions();
+    const idx = stored.findIndex(v => v.id === id);
+    if (idx >= 0) {
+      stored[idx].name = newName.trim();
+      saveStoredVersions(stored);
+      if (getActiveVersionId() === id) document.getElementById("versionLabel").textContent = newName.trim();
+      renderVersionList();
+    }
+  }
+}
+
+function deleteVersion(id) {
+  const versions = getAllVersions();
+  const ver = versions.find(v => v.id === id);
+  if (!ver || ver.isDefault) return;
+  if (!confirm(`确定删除版本"${ver.name}"吗？此操作不可撤销。`)) return;
+  const stored = getStoredVersions().filter(v => v.id !== id);
+  saveStoredVersions(stored);
+  if (getActiveVersionId() === id) activateVersion("default");
+  else renderVersionList();
+  showUploadStatus("info", `已删除版本"${ver.name}"。`);
+}
+
+function downloadTemplate() {
+  if (typeof XLSX === "undefined") { showUploadStatus("error", "❌ Excel库未加载，无法生成模板。"); return; }
+  const templateData = [
+    ["序号", "海关编码", "企业名称", "企业类型"],
+    [1, "3309661848", "浙江浙石油燃料油销售有限公司", "贸易"],
+    [2, "3309661854", "浙江自贸区中油泰富船舶燃料有限公司", "贸易"],
+    [3, "3309661Z01", "舟山某某物流有限公司", "物流"],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(templateData);
+  ws["!cols"] = [{ wch: 6 }, { wch: 16 }, { wch: 36 }, { wch: 10 }];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "企业名单");
+  XLSX.writeFile(wb, "企业名单导入模板.xlsx");
+}
+
+// 拖拽上传支持
+document.addEventListener("DOMContentLoaded", function() {
+  const uploadArea = document.getElementById("uploadArea");
+  if (uploadArea) {
+    uploadArea.addEventListener("dragover", function(e) { e.preventDefault(); uploadArea.classList.add("dragover"); });
+    uploadArea.addEventListener("dragleave", function(e) { uploadArea.classList.remove("dragover"); });
+    uploadArea.addEventListener("drop", function(e) {
+      e.preventDefault(); uploadArea.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+  }
+});
+
+// ============================================================
+//  10. 事件绑定 & 初始化
+// ============================================================
+document.getElementById("yearSelect").addEventListener("change", e => { STATE.year = parseInt(e.target.value); renderTable(); });
+document.getElementById("monthSelect").addEventListener("change", e => { STATE.singleMonth = parseInt(e.target.value); STATE.page = 1; renderTable(); });
+document.getElementById("monthStart").addEventListener("change", e => { STATE.rangeStart = parseInt(e.target.value); STATE.page = 1; renderTable(); });
+document.getElementById("monthEnd").addEventListener("change", e => { STATE.rangeEnd = parseInt(e.target.value); STATE.page = 1; renderTable(); });
+document.getElementById("searchInput").addEventListener("input", e => { STATE.search = e.target.value; STATE.page = 1; renderTable(); });
+
+function updateTime() {
+  const now = new Date();
+  const p = n => String(n).padStart(2, "0");
+  document.getElementById("currentTime").textContent = `${now.getFullYear()}-${p(now.getMonth()+1)}-${p(now.getDate())} ${p(now.getHours())}:${p(now.getMinutes())}`;
+}
+
+// 初始化：加载版本、生成数据、渲染
+(function init() {
+  updateTime();
+  setInterval(updateTime, 60000);
+
+  // 加载版本
+  const activeId = getActiveVersionId();
+  const versions = getAllVersions();
+  const activeVer = versions.find(v => v.id === activeId) || versions[0];
+  activeEnterprises = activeVer.enterprises;
+  document.getElementById("versionLabel").textContent = activeVer.name;
+
+  // 生成模拟数据
+  regenerateData();
+
+  // 首次渲染
+  renderTypeChips();
+  renderMetricToggles();
+  renderTable();
+})();
+</script>
+</body>
+</html>
